@@ -1,17 +1,4 @@
-"""
-main.py
-Compara árboles AVL y Red-Black con los mismos datos y las mismas operaciones.
-
-Ejecución:
-    python main.py
-El programa pregunta cuántas llaves insertar (entre 100.000 y 1.000.000).
-
-Fases: 1) generar datos  2) ejecutar y medir  3) calcular métricas  4) presentar.
-"""
 import sys
-
-if sys.version_info < (3, 10):
-    sys.exit("Se requiere Python 3.10 o superior.")
 
 import gc
 import math
@@ -21,30 +8,22 @@ from time import perf_counter
 from arboles import AVLTree, RBTree
 
 N_MIN, N_MAX = 100_000, 1_000_000
-SEMILLA = 42                    # cambia este valor para otra corrida reproducible
+SEMILLA = 42
 N_BORRADOS = 10_000
 N_BUSQUEDAS = 100
-REPETICIONES_BUSQUEDA = 1_000   # se repite el lote de 100 búsquedas para medir un tiempo estable
+REPETICIONES_BUSQUEDA = 1_000
 
 
-# ---------------------------------------------------------------------
-# FASE 1: generación de datos (una sola vez; se reutilizan en ambos árboles)
-# ---------------------------------------------------------------------
 def generar_datos(n, semilla):
     rng = random.Random(semilla)
-    claves = rng.sample(range(1, 10 * n + 1), n)     # llaves únicas, en orden aleatorio
-    a_borrar = rng.sample(claves, N_BORRADOS)        # 10.000 llaves que sí existen
-    a_buscar = rng.sample(claves, N_BUSQUEDAS)       # 100 llaves (algunas pueden haber sido borradas)
+    claves = rng.sample(range(1, 10 * n + 1), n)
+    a_borrar = rng.sample(claves, N_BORRADOS)
+    a_buscar = rng.sample(claves, N_BUSQUEDAS)
     return claves, a_borrar, a_buscar
 
-
-# ---------------------------------------------------------------------
-# FASE 2: ejecución y medición (cada operación se mide por separado)
-# ---------------------------------------------------------------------
 def medir(funcion):
-    """Ejecuta funcion() con el recolector de basura desactivado; devuelve segundos."""
-    gc.collect()          # limpia lo que dejó la fase anterior
-    gc.disable()          # evita pausas del GC dentro de la medición
+    gc.collect()
+    gc.disable()
     try:
         t0 = perf_counter()
         funcion()
@@ -78,7 +57,6 @@ def ejecutar_borrado(arbol, claves):
 
 
 def ejecutar_busquedas(arbol, claves):
-    # (a) Tiempo: usa search() original, sin contadores, repetido para mayor precisión.
     def operacion():
         buscar = arbol.search
         for _ in range(REPETICIONES_BUSQUEDA):
@@ -87,7 +65,6 @@ def ejecutar_busquedas(arbol, claves):
 
     t_lote = medir(operacion) / REPETICIONES_BUSQUEDA
 
-    # (b) Comparaciones: pasada aparte con search_contando(), fuera de la medición de tiempo.
     comps = visitados = 0
     aciertos = []
     for k in claves:
@@ -98,9 +75,7 @@ def ejecutar_busquedas(arbol, claves):
     return {"tiempo_lote": t_lote, "comparaciones": comps, "visitados": visitados, "aciertos": aciertos}
 
 
-# ---------------------------------------------------------------------
-# FASE 3: recopilación de métricas y validaciones
-# ---------------------------------------------------------------------
+
 def probar_arbol(nombre, arbol, claves, a_borrar, a_buscar):
     n = len(claves)
     print(f"\n[{nombre}] insertando {n:,} llaves ...")
@@ -129,9 +104,6 @@ def probar_arbol(nombre, arbol, claves, a_borrar, a_buscar):
     }
 
 
-# ---------------------------------------------------------------------
-# FASE 4: presentación de resultados
-# ---------------------------------------------------------------------
 def armar_filas(a, r, n):
     nb, nq = N_BORRADOS, N_BUSQUEDAS
     return [
@@ -182,9 +154,7 @@ def imprimir_tabla(a, r, n, semilla):
           f"cota de altura RB <= {2 * math.log2(n + 1):.1f}")
 
 
-# ---------------------------------------------------------------------
 def pedir_cantidad_llaves():
-    """Pregunta por consola la cantidad de llaves hasta recibir un valor válido."""
     while True:
         texto = input(f"Cantidad de llaves a insertar ({N_MIN:,} a {N_MAX:,}) [Enter = {N_MIN:,}]: ")
         texto = texto.strip().replace(".", "").replace(",", "").replace("_", "")
@@ -205,9 +175,8 @@ def main():
     for nombre, clase in (("AVL", AVLTree), ("Red-Black", RBTree)):
         arbol = clase()
         resultados[nombre] = probar_arbol(nombre, arbol, claves, a_borrar, a_buscar)
-        del arbol                       # libera memoria antes de probar el siguiente árbol
+        del arbol
 
-    # Consistencia entre ambos árboles: mismas búsquedas -> mismos aciertos/fallos
     assert resultados["AVL"]["aciertos"] == resultados["Red-Black"]["aciertos"], \
         "Los dos árboles dieron resultados de búsqueda distintos"
 
