@@ -1,21 +1,6 @@
-"""
-arboles.py
-Árboles AVL y Red-Black basados en el código de referencia (semanas 11 y 12).
-
-Cambios respecto al código de referencia (ver explicación en la conversación):
-  * RBNode / AVLNode: los campos ahora están anotados para que @dataclass los reconozca.
-  * Contador de rotaciones (self.rotations): +1 por cada llamada a rotate_left / rotate_right.
-  * search_contando(): búsqueda idéntica a search() pero que cuenta comparaciones.
-  * RBTree.delete() y _delete_fixup(): no existían; se implementan siguiendo CLRS.
-  * validar() y altura(): comprobaciones de invariantes (se usan fuera de la medición).
-"""
 from dataclasses import dataclass
 from typing import Any, Optional
 
-
-# =====================================================================
-#  ÁRBOL AVL
-# =====================================================================
 @dataclass(eq=False, slots=True)
 class AVLNode:
     key: Any
@@ -25,23 +10,18 @@ class AVLNode:
 
 
 def _height(n):
-    """Returns node height (0 if None)."""
     return n.height if n else 0
 
 
 def _update(n):
-    """Updates the height of a node."""
     n.height = 1 + max(_height(n.left), _height(n.right))
 
 
 def _balance(n):
-    """Returns balance factor of a node."""
     return (_height(n.left) - _height(n.right)) if n else 0
 
 
 class AVLTree:
-    """AVL Tree with self-balancing insert and delete."""
-
     def __init__(self):
         self.root = None
         self.rotations = 0  # rotaciones simples acumuladas (una doble cuenta 2)
@@ -67,9 +47,7 @@ class AVLTree:
         _update(y)
         return y
 
-    # ---------- búsqueda ----------
     def search(self, key):
-        """Búsqueda original (sin contadores, para medir tiempo)."""
         cur = self.root
         while cur:
             if key == cur.key:
@@ -78,20 +56,18 @@ class AVLTree:
         return None
 
     def search_contando(self, key):
-        """Misma lógica que search(); devuelve (nodo, comparaciones, nodos_visitados)."""
         cur = self.root
         comps = 0
         visitados = 0
         while cur:
             visitados += 1
-            comps += 1                      # key == cur.key
+            comps += 1
             if key == cur.key:
                 return cur, comps, visitados
-            comps += 1                      # key < cur.key
+            comps += 1
             cur = cur.left if key < cur.key else cur.right
         return None, comps, visitados
 
-    # ---------- inserción ----------
     def insert(self, key):
         self.root = self._insert(self.root, key)
 
@@ -116,7 +92,6 @@ class AVLTree:
             return self.rotate_left(node)
         return node
 
-    # ---------- borrado ----------
     def _min_node(self, n):
         while n.left:
             n = n.left
@@ -154,12 +129,10 @@ class AVLTree:
             return self.rotate_left(node)
         return node
 
-    # ---------- utilidades (fuera de la medición) ----------
     def altura(self):
         return _height(self.root)
 
     def validar(self):
-        """Comprueba orden BST, alturas y balance AVL. Devuelve la cantidad de nodos."""
         def rec(n, lo, hi):
             if n is None:
                 return 0, 0
@@ -172,9 +145,6 @@ class AVLTree:
         return rec(self.root, None, None)[1]
 
 
-# =====================================================================
-#  ÁRBOL ROJO-NEGRO
-# =====================================================================
 @dataclass(eq=False, slots=True)
 class RBNode:
     key: Any
@@ -185,17 +155,14 @@ class RBNode:
 
 
 class RBTree:
-    """Red-Black Tree following CLRS-style balancing rules."""
-
     def __init__(self):
         self.NIL = RBNode(key=None, color="B")
         self.root = self.NIL
-        self.rotations = 0  # rotaciones acumuladas
+        self.rotations = 0
 
     def _is_nil(self, x):
         return x is self.NIL
 
-    # ---------- rotaciones ----------
     def rotate_left(self, x):
         self.rotations += 1
         y = x.right
@@ -230,7 +197,6 @@ class RBTree:
 
     # ---------- búsqueda ----------
     def search(self, key):
-        """Búsqueda original (sin contadores, para medir tiempo)."""
         cur = self.root
         while not self._is_nil(cur):
             if key == cur.key:
@@ -239,7 +205,6 @@ class RBTree:
         return None
 
     def search_contando(self, key):
-        """Misma lógica que search(); devuelve (nodo, comparaciones, nodos_visitados)."""
         cur = self.root
         comps = 0
         visitados = 0
@@ -253,7 +218,6 @@ class RBTree:
         return None, comps, visitados
 
     def _find(self, key):
-        """Devuelve el nodo con esa llave, o NIL si no existe (usado por delete)."""
         cur = self.root
         while not self._is_nil(cur):
             if key == cur.key:
@@ -310,9 +274,7 @@ class RBTree:
                     self.rotate_left(z.parent.parent)
         self.root.color = "B"
 
-    # ---------- borrado (NUEVO, CLRS) ----------
     def _transplant(self, u, v):
-        """Reemplaza el subárbol de u por el subárbol de v."""
         if u.parent is None:
             self.root = v
         elif u is u.parent.left:
@@ -401,14 +363,12 @@ class RBTree:
                     x = self.root
         x.color = "B"
 
-    # ---------- utilidades (fuera de la medición) ----------
     def altura(self):
         def h(n):
             return 0 if self._is_nil(n) else 1 + max(h(n.left), h(n.right))
         return h(self.root)
 
     def validar(self):
-        """Comprueba las propiedades Red-Black y el orden BST. Devuelve la cantidad de nodos."""
         if self._is_nil(self.root):
             return 0
         assert self.root.color == "B", "RB: la raíz debe ser negra"
